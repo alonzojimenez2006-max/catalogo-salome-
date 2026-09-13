@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Confecciones Salomé - Catálogo Inteligente</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Si notas que el rosado del logo es ligeramente distinto, puedes cambiar este código hex #b0005a por el exacto */
+        .bg-fucsia { background-color: #b0005a; }
+        .text-fucsia { color: #b0005a; }
+        #carrito-panel { transition: transform 0.3s ease-in-out; }
+        .translate-x-full { transform: translateX(100%); }
+        .scroll-variantes::-webkit-scrollbar { width: 4px; }
+        .scroll-variantes::-webkit-scrollbar-thumb { background: #d1d5db; border-radius: 4px; }
+    </style>
+</head>
+<body class="bg-gray-100 font-sans">
+
+    <!-- Navbar Corporativo -->
+    <header class="bg-fucsia shadow-md p-3 flex justify-between items-center sticky top-0 z-40">
+        <!-- Espaciador invisible para centrar el logo perfectamente -->
+        <div class="w-12"></div>
+        
+        <!-- Logo Central -->
+        <div class="cursor-pointer flex justify-center items-center" onclick="cerrarDetalle()">
+            <img src="logo.png" alt="Confecciones Salomé" class="h-11 w-auto object-contain rounded shadow-sm border border-pink-700">
+        </div>
+        
+        <!-- Botón del Carrito (En blanco para contrastar con el fondo fucsia) -->
+        <button onclick="toggleCarrito()" class="relative p-2 hover:bg-pink-800 rounded-full transition text-white w-12 flex justify-center items-center">
+            <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>
+            <span id="contador-carrito" class="absolute top-0 right-0 bg-white text-fucsia text-xs rounded-full h-5 w-5 flex items-center justify-center font-bold shadow">0</span>
+        </button>
+    </header>
+
+    <!-- Buscador -->
+    <div class="bg-white px-4 py-3 border-b sticky top-[68px] z-30 shadow-sm">
+        <div class="max-w-7xl mx-auto relative">
+            <svg class="w-5 h-5 absolute left-3 top-2.5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+            <input type="text" id="buscador" onkeyup="filtrarCatalogo()" placeholder="Buscar prenda (ej. Body, Top...)" class="w-full bg-gray-100 border-transparent rounded-lg pl-10 pr-4 py-2 focus:bg-white focus:border-pink-500 focus:ring-2 focus:ring-pink-200 outline-none transition">
+        </div>
+    </div>
+
+    <!-- Contenedor Principal -->
+    <main class="p-4 max-w-7xl mx-auto flex flex-col md:flex-row gap-6 items-start relative">
+        
+        <!-- PANEL IZQUIERDO: Detalles del Producto -->
+        <section id="panel-detalle" class="fixed inset-0 z-50 bg-white p-5 overflow-y-auto transform translate-y-full transition-transform duration-300 md:relative md:transform-none md:z-auto md:w-2/5 md:rounded-xl md:shadow-lg md:sticky md:top-36 md:flex flex-col hidden">
+            
+            <button onclick="cerrarDetalle()" class="md:hidden absolute top-4 right-4 bg-gray-100 text-gray-600 rounded-full p-2 z-10 hover:bg-gray-200">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+            </button>
+
+            <!-- Sección central vacía con el logo de marca de agua -->
+            <div id="contenido-detalle" class="mt-8 md:mt-0 h-full flex flex-col justify-center">
+                <div class="text-center text-gray-400 py-20 hidden md:flex flex-col items-center">
+                    <img src="logo.png" class="h-24 mb-5 opacity-40 rounded-xl grayscale transition hover:grayscale-0 duration-300">
+                    <p class="font-medium">Selecciona un producto del catálogo.</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- PANEL DERECHO: Catálogo -->
+        <section class="w-full md:w-3/5">
+            <div id="grid-productos" class="grid grid-cols-2 lg:grid-cols-3 gap-4"></div>
+            <div id="sin-resultados" class="hidden text-center text-gray-500 py-10">
+                No se encontraron prendas con ese nombre.
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Panel Lateral del Carrito -->
+    <div id="carrito-panel" class="fixed inset-y-0 right-0 w-80 bg-white shadow-2xl transform translate-x-full z-50 flex flex-col">
+        <div class="p-4 border-b flex justify-between items-center bg-gray-50">
+            <h2 class="text-lg font-bold">TU CARRITO</h2>
+            <button onclick="toggleCarrito()" class="text-gray-500 hover:text-gray-800 font-bold text-2xl">&times;</button>
+        </div>
+        
+        <div id="lista-carrito" class="flex-1 overflow-y-auto p-4 space-y-4"></div>
+
+        <div class="p-4 border-t bg-gray-50">
+            <div class="text-lg font-bold mb-4 flex justify-between">
+                <span>Total:</span>
+                <span class="text-fucsia">$<span id="total-precio">0.00</span></span>
+            </div>
+            <button onclick="enviarWhatsApp()" class="w-full bg-fucsia text-white font-bold py-3 rounded-lg shadow-lg hover:bg-pink-800 transition">
+                CONFIRMAR PEDIDO
+            </button>
+        </div>
+    </div>
+
+    <!-- Script de Lógica -->
+    <script>
+        let productosBase = [];
+        let carrito = [];
+        let productoActivo = null;
+        let imgIndexActual = 0;
+
+        function renderizarCatalogo(listaA_Mostrar = productosBase) {
+            const grid = document.getElementById('grid-productos');
+            const msgVacio = document.getElementById('sin-resultados');
+            grid.innerHTML = '';
+
+            if(listaA_Mostrar.length === 0) {
+                msgVacio.classList.remove('hidden');
+            } else {
+                msgVacio.classList.add('hidden');
+                listaA_Mostrar.forEach(prod => {
+                    const badgeCombo = prod.unidades > 1 ? `<span class="absolute top-2 left-2 bg-fucsia text-white text-[10px] font-bold px-2 py-1 rounded shadow">COMBO DE ${prod.unidades}</span>` : '';
+                    
+                    const card = `
+                        <div onclick="cargarDetalle(${prod.id})" class="bg-white border rounded-xl p-3 shadow-sm hover:shadow-md transition cursor-pointer flex flex-col h-full group relative">
+                            ${badgeCombo}
+                            <div class="overflow-hidden rounded-lg mb-3 border border-gray-100">
+                                <img src="${prod.imgs[0]}" class="w-full h-40 object-cover group-hover:scale-105 transition duration-300">
+                            </div>
+                            <h3 class="font-bold text-sm text-gray-800">${prod.nombre}</h3>
+                            <p class="text-fucsia mb-1 font-bold mt-auto">$${prod.precio.toFixed(2)}</p>
+                        </div>
+                    `;
+                    grid.innerHTML += card;
+                });
+            }
+        }
+
+        function filtrarCatalogo() {
+            const textoBuscado = document.getElementById('buscador').value.toLowerCase();
+            const productosFiltrados = productosBase.filter(prod => prod.nombre.toLowerCase().includes(textoBuscado));
+            renderizarCatalogo(productosFiltrados);
+        }
+
+        function cargarDetalle(idProducto) {
+            productoActivo = productosBase.find(p => p.id === idProducto);
+            imgIndexActual = 0;
+
+            const panel = document.getElementById('panel-detalle');
+            const contenido = document.getElementById('contenido-detalle');
+            
+            panel.classList.remove('hidden');
+            setTimeout(() => panel.classList.remove('translate-y-full'), 10);
+
+            let controlesCarrusel = productoActivo.imgs.length > 1 ? `
+                <button onclick="cambiarImagen(-1)" class="absolute left-2 top-1/2 transform -translate-y-1/2 bg-white/80 rounded-full p-2 shadow"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg></button>
+                <button onclick="cambiarImagen(1)" class="absolute right-2 top-1/2 transform -translate-y-1/2 bg-white/80 rounded-full p-2 shadow"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg></button>
+                <div class="absolute bottom-2 right-2 bg-black/50 text-white text-xs px-2 py-1 rounded-full"><span id="img-counter">1 / ${productoActivo.imgs.length}</span></div>
+            ` : '';
+
+            contenido.innerHTML = `
+                <div class="relative w-full h-72 bg-gray-100 rounded-lg mb-4 overflow-hidden border border-gray-200">
+                    <img id="img-detalle" src="${productoActivo.imgs[0]}" class="w-full h-full object-cover">
+                    ${controlesCarrusel}
+                </div>
+                <h2 class="text-2xl font-bold text-gray-800">${productoActivo.nombre}</h2>
+                <p class="text-xl text-fucsia font-bold mb-2">$${productoActivo.precio.toFixed(2)}</p>
+                <p class="text-gray-600 text-sm mb-4">${productoActivo.descripcion}</p>
+                <hr class="mb-4">
+                <div class="mb-2 flex items-center justify-between">
+                    <label class="font-bold text-sm text-gray-700">Cantidad (Paquetes):</label>
+                    <input type="number" id="cant-detalle" value="1" min="1" oninput="generarFilas()" class="border rounded-lg w-16 text-center p-1.5 text-sm bg-gray-50 font-bold outline-none focus:ring-2 focus:ring-pink-500">
+                </div>
+                <div id="variantes-detalle" class="flex flex-col mb-4 max-h-48 overflow-y-auto scroll-variantes pr-1"></div>
+                <button onclick="agregarAlCarrito()" class="w-full bg-gray-900 text-white font-bold py-3 rounded-lg shadow hover:bg-black transition mt-auto">AÑADIR AL PEDIDO</button>
+            `;
+
+            generarFilas();
+        }
+
+        function cerrarDetalle() {
+            const panel = document.getElementById('panel-detalle');
+            panel.classList.add('translate-y-full');
+            setTimeout(() => panel.classList.add('hidden'), 300);
+        }
+
+        function cambiarImagen(direccion) {
+            imgIndexActual += direccion;
+            if(imgIndexActual >= productoActivo.imgs.length) imgIndexActual = 0;
+            if(imgIndexActual < 0) imgIndexActual = productoActivo.imgs.length - 1;
+            document.getElementById('img-detalle').src = productoActivo.imgs[imgIndexActual];
+            document.getElementById('img-counter').innerText = `${imgIndexActual + 1} / ${productoActivo.imgs.length}`;
+        }
+
+        function generarFilas() {
+            let cantidad = parseInt(document.getElementById('cant-detalle').value);
+            const contenedor = document.getElementById('variantes-detalle');
+            if (isNaN(cantidad) || cantidad < 1) cantidad = 1;
+
+            let unids = productoActivo.unidades || 1;
+            let opcionesColor = productoActivo.colores.map(c => `<option value="${c}">${c}</option>`).join('');
+            let opcionesTalla = productoActivo.tallas.map(t => `<option value="${t}">${t}</option>`).join('');
+
+            contenedor.innerHTML = ''; 
+            
+            // Ciclo 1: Por cada paquete o combo que lleve el cliente
+            for (let c = 1; c <= cantidad; c++) {
+                if (unids > 1) {
+                    contenedor.innerHTML += `<div class="text-[11px] font-bold text-pink-600 mt-2 mb-1 uppercase tracking-wide">Configurando Combo #${c}</div>`;
+                }
+                
+                // Ciclo 2: Por cada prenda dentro del combo
+                for (let u = 1; u <= unids; u++) {
+                    contenedor.innerHTML += `
+                        <div class="flex gap-2 items-center bg-gray-50 p-2 rounded-lg border border-gray-200 mb-1.5">
+                            <span class="text-xs font-bold text-gray-400 w-4">${unids > 1 ? u : c}</span>
+                            <select id="color-act-${c}-${u}" class="flex-1 text-sm p-1.5 border rounded bg-white outline-none"><option value="" disabled selected>Color...</option>${opcionesColor}</select>
+                            <select id="talla-act-${c}-${u}" class="flex-1 text-sm p-1.5 border rounded bg-white outline-none"><option value="" disabled selected>Talla...</option>${opcionesTalla}</select>
+                        </div>
+                    `;
+                }
+            }
+        }
+
+        function agregarAlCarrito() {
+            let cantidad = parseInt(document.getElementById('cant-detalle').value);
+            let unids = productoActivo.unidades || 1;
+
+            // Validación rigurosa
+            for (let c = 1; c <= cantidad; c++) {
+                for (let u = 1; u <= unids; u++) {
+                    if(!document.getElementById(`color-act-${c}-${u}`).value || !document.getElementById(`talla-act-${c}-${u}`).value) {
+                        return alert(`Por favor, selecciona el Color y la Talla para todas las piezas del combo.`);
+                    }
+                }
+            }
+
+            // Guardar la estructura en el carrito
+            for (let c = 1; c <= cantidad; c++) {
+                let selecciones = [];
+                for (let u = 1; u <= unids; u++) {
+                    selecciones.push({
+                        color: document.getElementById(`color-act-${c}-${u}`).value,
+                        talla: document.getElementById(`talla-act-${c}-${u}`).value
+                    });
+                }
+                carrito.push({ ...productoActivo, selecciones: selecciones });
+            }
+            
+            document.getElementById('cant-detalle').value = 1;
+            generarFilas();
+            actualizarCarrito();
+            
+            if(window.innerWidth < 768) cerrarDetalle();
+            toggleCarrito(true);
+        }
+
+        function actualizarCarrito() {
+            const lista = document.getElementById('lista-carrito');
+            const totalSpan = document.getElementById('total-precio');
+            document.getElementById('contador-carrito').innerText = carrito.length;
+            lista.innerHTML = '';
+            let total = 0;
+
+            if(carrito.length === 0) lista.innerHTML = '<p class="text-gray-500 text-center text-sm mt-4">Carrito vacío.</p>';
+
+            carrito.forEach((item, index) => {
+                total += item.precio;
+                
+                // Generar el desglose de prendas visualmente
+                let configHTML = item.selecciones.map((sel, i) => 
+                    `<div class="text-[11px] text-gray-500 mt-0.5"><span class="font-bold text-gray-400">#${i+1}</span> ${sel.color} - Talla ${sel.talla}</div>`
+                ).join('');
+
+                lista.innerHTML += `
+                    <div class="flex justify-between items-start border-b pb-3 pt-2 text-sm">
+                        <div class="flex-1 pr-2">
+                            <p class="font-bold text-gray-800 leading-tight">${item.nombre}</p>
+                            <div class="mt-1">${configHTML}</div>
+                        </div>
+                        <div class="flex items-center gap-3">
+                            <p class="font-bold text-fucsia mt-1">$${item.precio.toFixed(2)}</p>
+                            <button onclick="eliminarDelCarrito(${index})" class="text-gray-300 hover:text-red-500 font-bold text-xl leading-none">&times;</button>
+                        </div>
+                    </div>
+                `;
+            });
+            totalSpan.innerText = total.toFixed(2);
+        }
+
+        function eliminarDelCarrito(index) {
+            carrito.splice(index, 1);
+            actualizarCarrito();
+        }
+
+        function toggleCarrito(forceOpen = false) {
+            const panel = document.getElementById('carrito-panel');
+            if(forceOpen) panel.classList.remove('translate-x-full');
+            else panel.classList.toggle('translate-x-full');
+        }
+
+        function enviarWhatsApp() {
+            if(carrito.length === 0) return alert("El carrito está vacío.");
+            
+            // 1. Generar un código de orden único (Ej: CS-X7B9Q2)
+            const codigoOrden = "CS-" + Math.random().toString(36).substr(2, 6).toUpperCase();
+            
+            // 2. Armar el encabezado del mensaje con el código
+            let mensaje = `*NUEVO PEDIDO - CONFECCIONES SALOMÉ*%0A`;
+            mensaje += `*CÓDIGO DE ORDEN:* ${codigoOrden}%0A%0A`;
+            mensaje += `*Detalle de la compra:*%0A`;
+            
+            // 3. Listar los productos y sus características
+            carrito.forEach((item, idx) => { 
+                mensaje += `*${idx + 1}. ${item.nombre}* ($${item.precio})%0A`; 
+                item.selecciones.forEach((sel, i) => {
+                    mensaje += `   - Pieza ${i+1}: ${sel.color} / Talla ${sel.talla}%0A`;
+                });
+                mensaje += `%0A`;
+            });
+            
+            // 4. Agregar el total
+            mensaje += `*TOTAL: $${document.getElementById('total-precio').innerText}*%0A%0AConfirmo mi pedido.`;
+            
+            // 5. Enviar a WhatsApp
+            window.open(`https://wa.me/584249123143?text=${mensaje}`, '_blank');
+        }
+
+        async function cargarCatalogoDesdeAPI() {
+            try {
+                const respuesta = await fetch("/api/productos");                productosBase = await respuesta.json();
+                renderizarCatalogo();
+            } catch (error) {
+                console.error("Error al conectar con la API:", error);
+            }
+        }
+
+        cargarCatalogoDesdeAPI();
+    </script>
+</body>
+</html>

@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin - Confecciones Salomé</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .bg-fucsia { background-color: #b0005a; }
+        .text-fucsia { color: #b0005a; }
+    </style>
+</head>
+<body class="bg-gray-100 font-sans">
+
+    <!-- Pantalla de Login (Autenticación) -->
+    <div id="login-overlay" class="fixed inset-0 bg-gray-900 bg-opacity-95 flex items-center justify-center z-50">
+        <div class="bg-white p-8 rounded-xl shadow-2xl w-96 max-w-[90%]">
+            <div class="text-center mb-6">
+                <div class="text-2xl font-bold text-gray-800">CS <span class="text-fucsia uppercase text-sm">Admin</span></div>
+                <h2 class="text-lg text-gray-500 mt-1">Acceso Restringido</h2>
+            </div>
+            <input type="password" id="admin-pass" placeholder="Contraseña de administrador" class="w-full border rounded-lg px-4 py-3 mb-4 focus:outline-none focus:ring-2 focus:ring-pink-500 text-center font-bold tracking-widest">
+            <button onclick="verificarAcceso()" class="w-full bg-gray-900 text-white font-bold py-3 rounded-lg hover:bg-black transition shadow-lg">ENTRAR AL PANEL</button>
+            <p id="login-error" class="text-red-500 text-sm text-center mt-3 font-bold hidden">Contraseña incorrecta</p>
+        </div>
+    </div>
+
+    <!-- Panel Dashboard Principal (Oculto hasta hacer login) -->
+    <div id="admin-dashboard" class="hidden min-h-screen flex flex-col">
+        <!-- Barra de Navegación -->
+        <header class="bg-white shadow p-4 flex justify-between items-center sticky top-0 z-40">
+            <div class="text-xl font-bold text-gray-800">Gestor de <span class="text-fucsia">Catálogo</span></div>
+            <button onclick="cerrarSesion()" class="text-sm font-bold text-gray-500 hover:text-red-500 transition">Cerrar Sesión</button>
+        </header>
+
+        <main class="flex-1 p-6 max-w-5xl mx-auto w-full">
+            <div class="flex justify-between items-center mb-6">
+                <h1 class="text-2xl font-bold text-gray-800">Inventario Actual</h1>
+                <button onclick="abrirModal()" class="bg-fucsia text-white px-5 py-2.5 rounded-lg font-bold shadow hover:bg-pink-800 transition flex items-center gap-2">
+                    <span>+</span> Nuevo Producto
+                </button>
+            </div>
+
+            <!-- Tabla de Datos -->
+            <div class="bg-white rounded-xl shadow overflow-x-auto">
+                <table class="w-full text-left border-collapse min-w-[600px]">
+                    <thead>
+                        <tr class="bg-gray-50 border-b">
+                            <th class="p-4 text-xs font-bold text-gray-400 uppercase">ID</th>
+                            <th class="p-4 text-xs font-bold text-gray-400 uppercase">Producto</th>
+                            <th class="p-4 text-xs font-bold text-gray-400 uppercase">Precio</th>
+                            <th class="p-4 text-xs font-bold text-gray-400 uppercase">Estado</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tabla-productos">
+                        <!-- Productos inyectados desde Python -->
+                    </tbody>
+                </table>
+            </div>
+        </main>
+    </div>
+
+    <!-- Modal: Formulario para Agregar/Editar Producto -->
+    <div id="modal-producto" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden p-4">
+        <div class="bg-white p-6 rounded-xl shadow-2xl w-full max-w-lg max-h-[95vh] overflow-y-auto">
+            <h2 id="modal-titulo" class="text-xl font-bold mb-5 text-gray-800 border-b pb-2">Crear Nuevo Producto</h2>
+            
+            <div class="space-y-4">
+                <div>
+                    <label class="text-xs font-bold text-gray-600">Nombre de la Prenda</label>
+                    <input type="text" id="form-nombre" placeholder="Ej. Falda Plisada" class="w-full border rounded-lg p-2.5 text-sm focus:ring-2 focus:ring-pink-500 outline-none bg-gray-50">
+                </div>
+                <div>
+                    <label class="text-xs font-bold text-gray-600">Descripción</label>
+                    <textarea id="form-descripcion" rows="2" class="w-full border rounded-lg p-2.5 text-sm focus:ring-2 focus:ring-pink-500 outline-none bg-gray-50"></textarea>
+                </div>
+                <div class="flex gap-4">
+                    <div class="flex-1">
+                        <label class="text-xs font-bold text-gray-600">Precio total ($)</label>
+                        <input type="number" step="0.01" id="form-precio" placeholder="12.00" class="w-full border rounded-lg p-2.5 text-sm focus:ring-2 focus:ring-pink-500 outline-none bg-gray-50 font-bold">
+                    </div>
+                    <div class="flex-1">
+                        <label class="text-xs font-bold text-gray-600">Unidades en el combo</label>
+                        <input type="number" id="form-unidades" value="1" min="1" class="w-full border rounded-lg p-2.5 text-sm focus:ring-2 focus:ring-pink-500 outline-none bg-gray-50 font-bold">
+                    </div>
+                </div>
+                <div>
+                    <label class="text-xs font-bold text-gray-600">URLs de las Imágenes (Separa por comas si son varias)</label>
+                    <textarea id="form-imgs" rows="2" placeholder="http://link-foto1.jpg, http://link-foto2.jpg" class="w-full border rounded-lg p-2.5 text-sm focus:ring-2 focus:ring-pink-500 outline-none bg-gray-50"></textarea>
+                </div>
+                <div class="flex gap-4">
+                    <div class="flex-1">
+                        <label class="text-xs font-bold text-gray-600">Colores (Por comas)</label>
+                        <input type="text" id="form-colores" placeholder="Rojo, Azul, Negro" class="w-full border rounded-lg p-2.5 text-sm focus:ring-2 focus:ring-pink-500 outline-none bg-gray-50">
+                    </div>
+                    <div class="flex-1">
+                        <label class="text-xs font-bold text-gray-600">Tallas (Por comas)</label>
+                        <input type="text" id="form-tallas" placeholder="S, M, L" class="w-full border rounded-lg p-2.5 text-sm focus:ring-2 focus:ring-pink-500 outline-none bg-gray-50">
+                    </div>
+                </div>
+            </div>
+
+            <div class="flex justify-end gap-3 mt-8 pt-4 border-t">
+                <button onclick="cerrarModal()" class="px-5 py-2.5 text-gray-500 font-bold hover:bg-gray-100 rounded-lg transition">Cancelar</button>
+                <button onclick="guardarProducto()" class="px-5 py-2.5 bg-fucsia text-white font-bold rounded-lg shadow-lg hover:bg-pink-800 transition">Subir al Catálogo</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Lógica JavaScript del Panel -->
+    <script>
+        const API_URL = "/api/productos";
+        const PASS_SECRETA = "admin123"; 
+        let idEdicion = null; // Variable para saber si estamos creando o editando
+
+        function verificarAcceso() {
+            if (document.getElementById('admin-pass').value === PASS_SECRETA) {
+                document.getElementById('login-overlay').classList.add('hidden');
+                document.getElementById('admin-dashboard').classList.remove('hidden');
+                cargarProductos();
+            } else {
+                document.getElementById('login-error').classList.remove('hidden');
+            }
+        }
+
+        document.getElementById('admin-pass').addEventListener('keypress', e => {
+            if (e.key === 'Enter') verificarAcceso();
+        });
+
+        function cerrarSesion() {
+            document.getElementById('admin-pass').value = '';
+            document.getElementById('login-overlay').classList.remove('hidden');
+            document.getElementById('admin-dashboard').classList.add('hidden');
+            document.getElementById('login-error').classList.add('hidden');
+        }
+
+        async function cargarProductos() {
+            try {
+                const response = await fetch(API_URL);
+                const productos = await response.json();
+                const tbody = document.getElementById('tabla-productos');
+                tbody.innerHTML = '';
+
+                // Guardamos los productos globalmente para poder editarlos fácilmente
+                window.productosActuales = productos;
+
+                productos.forEach(prod => {
+                    tbody.innerHTML += `
+                        <tr class="border-b hover:bg-gray-50 transition">
+                            <td class="p-4 font-bold text-gray-400">#${prod.id}</td>
+                            <td class="p-4">
+                                <div class="flex items-center gap-3">
+                                    <img src="${prod.imgs[0]}" class="w-12 h-12 object-cover rounded-lg shadow-sm border">
+                                    <div>
+                                        <span class="font-bold text-gray-800 block">${prod.nombre}</span>
+                                        <span class="text-xs text-gray-400">Tallas: ${prod.tallas.join(', ')}</span>
+                                    </div>
+                                </div>
+                            </td>
+                            <td class="p-4 font-bold text-fucsia text-lg">$${prod.precio.toFixed(2)}</td>
+                            <td class="p-4 flex gap-2">
+                                <button onclick="prepararEdicion(${prod.id})" class="text-blue-500 hover:text-blue-700 p-2 font-bold transition">Editar</button>
+                                <button onclick="borrarProducto(${prod.id})" class="text-red-500 hover:text-red-700 p-2 font-bold transition">Borrar</button>
+                            </td>
+                        </tr>
+                    `;
+                });
+            } catch (error) {
+                console.error("Error cargando productos:", error);
+            }
+        }
+
+        function abrirModal(modoEdicion = false) {
+            if(!modoEdicion) {
+                idEdicion = null;
+                document.getElementById('form-unidades').value = '1';
+                document.getElementById('modal-titulo').innerText = "Crear Nuevo Producto";
+                document.getElementById('form-nombre').value = '';
+                document.getElementById('form-descripcion').value = '';
+                document.getElementById('form-precio').value = '';
+                document.getElementById('form-imgs').value = '';
+                document.getElementById('form-colores').value = '';
+                document.getElementById('form-tallas').value = '';
+            }
+            document.getElementById('modal-producto').classList.remove('hidden');
+        }
+
+        function cerrarModal() {
+            document.getElementById('modal-producto').classList.add('hidden');
+        }
+
+        function prepararEdicion(id) {
+            const producto = window.productosActuales.find(p => p.id === id);
+            if(!producto) return;
+
+            idEdicion = id;
+            document.getElementById('form-unidades').value = producto.unidades || 1;
+            document.getElementById('modal-titulo').innerText = "Editar Producto #" + id;
+            document.getElementById('form-nombre').value = producto.nombre;
+            document.getElementById('form-descripcion').value = producto.descripcion;
+            document.getElementById('form-precio').value = producto.precio;
+            document.getElementById('form-imgs').value = producto.imgs.join(', ');
+            document.getElementById('form-colores').value = producto.colores.join(', ');
+            document.getElementById('form-tallas').value = producto.tallas.join(', ');
+
+            abrirModal(true);
+        }
+
+        async function guardarProducto() {
+            // 1. Capturamos todos los textos y números del formulario
+            const nombre = document.getElementById('form-nombre').value;
+            const descripcion = document.getElementById('form-descripcion').value;
+            const precio = parseFloat(document.getElementById('form-precio').value);
+            
+            // NUEVO: Capturamos las unidades del combo (Si lo dejan vacío, por defecto será 1)
+            const unidades = parseInt(document.getElementById('form-unidades').value) || 1;
+            
+            // 2. Convertimos los textos separados por comas en listas (Arrays)
+            const imgs = document.getElementById('form-imgs').value.split(',').map(s => s.trim()).filter(s => s);
+            const colores = document.getElementById('form-colores').value.split(',').map(s => s.trim()).filter(s => s);
+            const tallas = document.getElementById('form-tallas').value.split(',').map(s => s.trim()).filter(s => s);
+
+            // 3. Validación de seguridad para que no envíen el formulario a medias
+            if(!nombre || isNaN(precio) || imgs.length === 0) {
+                return alert("Faltan datos obligatorios. Asegúrate de poner Nombre, Precio e Imágenes.");
+            }
+
+            // 4. Armamos el "Paquete" de datos EXACTO que espera Python, ahora incluyendo las unidades
+            const producto = { 
+                nombre: nombre, 
+                descripcion: descripcion, 
+                precio: precio, 
+                imgs: imgs, 
+                colores: colores, 
+                tallas: tallas, 
+                unidades: unidades // <-- Aquí se integra el combo a la base de datos
+            };
+
+            // 5. Decidimos si estamos creando uno nuevo (POST) o editando (PUT)
+            const urlFinal = idEdicion ? `${API_URL}/${idEdicion}` : API_URL;
+            const metodo = idEdicion ? 'PUT' : 'POST';
+
+            // 6. Enviamos los datos al servidor
+            try {
+                const response = await fetch(urlFinal, {
+                    method: metodo,
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(producto)
+                });
+                
+                if (response.ok) {
+                    cerrarModal();
+                    cargarProductos(); // Refresca la tabla automáticamente
+                    alert("¡Prenda o combo guardado con éxito!");
+                } else {
+                    alert("El servidor rechazó los datos. Revisa la consola.");
+                }
+            } catch (error) {
+                console.error("Error al guardar:", error);
+                alert("Error de conexión con el servidor Python.");
+            }
+        }
+        async function borrarProducto(id) {
+            if(confirm("¿Estás seguro de que deseas eliminar este producto o combo permanentemente?")) {
+                try {
+                    const response = await fetch(`${API_URL}/${id}`, { method: 'DELETE' });
+                    if (response.ok) {
+                        cargarProductos();
+                    }
+                } catch (error) {
+                    alert("Error eliminando el producto.");
+                }
+            }
+        }
+    </script>
+</body>
+</html>
