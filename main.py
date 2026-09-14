@@ -1,4 +1,4 @@
-from fastapi import FastAPI
+¿from fastapi import FastAPI
 from fastapi.responses import FileResponse
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
@@ -120,6 +120,16 @@ def actualizar_producto(producto_id: int, producto: ProductoAdmin):
     cursor.close()
     conn.close()
     return {"mensaje": "Producto actualizado exitosamente"}
+
+@app.delete("/api/productos/{producto_id}")
+def eliminar_producto(producto_id: int):
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute('DELETE FROM productos WHERE id=%s', (producto_id,))
+    conn.commit()
+    cursor.close()
+    conn.close()
+    return {"mensaje": "Producto eliminado exitosamente"}
 
 @app.get("/")
 def pagina_principal():
