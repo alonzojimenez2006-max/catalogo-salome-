@@ -20,12 +20,12 @@ class ProductoAdmin(BaseModel):
     nombre: str
     descripcion: str
     precio: float
+    precio_combo: float = 0.0
     imgs: list[str]
     colores: list[str]
     tallas: list[str]
     unidades: int = 1
 
-# Variable de entorno que configuraremos en Render
 DATABASE_URL = os.getenv("DATABASE_URL", "postgresql://neondb_owner:npg_tqQWyp0OHgd4@ep-royal-dust-ax6ybowm.c-4.us-east-2.aws.neon.tech/neondb?sslmode=require")
 
 def get_db_connection():
@@ -41,6 +41,7 @@ def init_db():
                 nombre TEXT,
                 descripcion TEXT,
                 precio REAL,
+                precio_combo REAL DEFAULT 0.0,
                 imgs TEXT,
                 colores TEXT,
                 tallas TEXT,
@@ -48,6 +49,12 @@ def init_db():
             )
         ''')
         conn.commit()
+        # Parche para actualizar tabla existente sin borrar datos
+        try:
+            cursor.execute("ALTER TABLE productos ADD COLUMN precio_combo REAL DEFAULT 0.0")
+            conn.commit()
+        except Exception:
+            conn.rollback() 
         cursor.close()
         conn.close()
     except Exception as e:
@@ -59,7 +66,7 @@ init_db()
 def obtener_catalogo():
     conn = get_db_connection()
     cursor = conn.cursor()
-    cursor.execute("SELECT * FROM productos ORDER BY id ASC")
+    cursor.execute("SELECT id, nombre, descripcion, precio, precio_combo, imgs, colores, tallas, unidades FROM productos ORDER BY id ASC")
     filas = cursor.fetchall()
     cursor.close()
     conn.close()
@@ -71,10 +78,11 @@ def obtener_catalogo():
             "nombre": fila[1],
             "descripcion": fila[2],
             "precio": fila[3],
-            "imgs": json.loads(fila[4]),
-            "colores": json.loads(fila[5]),
-            "tallas": json.loads(fila[6]),
-            "unidades": fila[7]
+            "precio_combo": fila[4] if fila[4] is not None else 0.0,
+            "imgs": json.loads(fila[5]),
+            "colores": json.loads(fila[6]),
+            "tallas": json.loads(fila[7]),
+            "unidades": fila[8]
         })
     return catalogo
 
@@ -83,10 +91,10 @@ def crear_producto(producto: ProductoAdmin):
     conn = get_db_connection()
     cursor = conn.cursor()
     cursor.execute('''
-        INSERT INTO productos (nombre, descripcion, precio, imgs, colores, tallas, unidades)
-        VALUES (%s, %s, %s, %s, %s, %s, %s)
+        INSERT INTO productos (nombre, descripcion, precio, precio_combo, imgs, colores, tallas, unidades)
+        VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
     ''', (
-        producto.nombre, producto.descripcion, producto.precio, 
+        producto.nombre, producto.descripcion, producto.precio, producto.precio_combo,
         json.dumps(producto.imgs), json.dumps(producto.colores), json.dumps(producto.tallas), 
         producto.unidades
     ))
@@ -95,26 +103,16 @@ def crear_producto(producto: ProductoAdmin):
     conn.close()
     return {"mensaje": "Producto guardado exitosamente"}
 
-@app.delete("/api/productos/{producto_id}")
-def eliminar_producto(producto_id: int):
-    conn = get_db_connection()
-    cursor = conn.cursor()
-    cursor.execute("DELETE FROM productos WHERE id = %s", (producto_id,))
-    conn.commit()
-    cursor.close()
-    conn.close()
-    return {"mensaje": "Producto eliminado exitosamente"}
-
 @app.put("/api/productos/{producto_id}")
 def actualizar_producto(producto_id: int, producto: ProductoAdmin):
     conn = get_db_connection()
     cursor = conn.cursor()
     cursor.execute('''
         UPDATE productos 
-        SET nombre=%s, descripcion=%s, precio=%s, imgs=%s, colores=%s, tallas=%s, unidades=%s
+        SET nombre=%s, descripcion=%s, precio=%s, precio_combo=%s, imgs=%s, colores=%s, tallas=%s, unidades=%s
         WHERE id=%s
     ''', (
-        producto.nombre, producto.descripcion, producto.precio, 
+        producto.nombre, producto.descripcion, producto.precio, producto.precio_combo,
         json.dumps(producto.imgs), json.dumps(producto.colores), json.dumps(producto.tallas), 
         producto.unidades, producto_id
     ))
