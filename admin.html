@@ -215,7 +215,9 @@ function prepararEdicion(id) {
 async function guardarProducto() {
     const nombre = document.getElementById('form-nombre').value;
     const descripcion = document.getElementById('form-descripcion').value;
-    const precio = parseFloat(document.getElementById('form-precio').value);
+    
+    // Si dejas el campo vacío, se guarda como 0
+    const precio = parseFloat(document.getElementById('form-precio').value) || 0;
     const precio_combo = parseFloat(document.getElementById('form-precio-combo').value) || 0;
     const unidades = parseInt(document.getElementById('form-unidades').value) || 1;
     
@@ -223,8 +225,9 @@ async function guardarProducto() {
     const colores = document.getElementById('form-colores').value.split(',').map(s => s.trim()).filter(s => s);
     const tallas = document.getElementById('form-tallas').value.split(',').map(s => s.trim()).filter(s => s);
 
-    if(!nombre || isNaN(precio) || imgs.length === 0) {
-        return alert("Faltan datos obligatorios.");
+    // Nueva validación: Exige el nombre, las fotos y al menos un precio mayor a 0
+    if(!nombre || imgs.length === 0 || (precio === 0 && precio_combo === 0)) {
+        return alert("Debes ingresar el Nombre, las Imágenes y al menos un Precio (Unidad o Combo).");
     }
 
     const producto = { 
