@@ -131,7 +131,7 @@
             renderizarCatalogo(productosFiltrados);
         }
 
-        function cargarDetalle(idProducto) {
+    function cargarDetalle(idProducto) {
     productoActivo = productosBase.find(p => p.id === idProducto);
     imgIndexActual = 0;
     const panel = document.getElementById('panel-detalle');
@@ -147,7 +147,11 @@
     ` : '';
 
     let selectorCompra = '';
-    if (productoActivo.unidades > 1 && productoActivo.precio_combo > 0) {
+    let precioInicial = 0;
+
+    // Caso 1: Tiene AMBOS precios (Muestra el selector)
+    if (productoActivo.precio > 0 && productoActivo.precio_combo > 0 && productoActivo.unidades > 1) {
+        precioInicial = productoActivo.precio;
         selectorCompra = `
             <div class="mb-3 bg-pink-50 p-3 rounded-lg border border-pink-100">
                 <label class="font-bold text-sm text-pink-900 block mb-1">Elige cómo comprar:</label>
@@ -157,6 +161,21 @@
                 </select>
             </div>
         `;
+    } 
+    // Caso 2: SOLO tiene precio de COMBO (Venta exclusiva en combo)
+    else if (productoActivo.precio_combo > 0 && productoActivo.precio === 0) {
+        precioInicial = productoActivo.precio_combo;
+        selectorCompra = `
+            <input type="hidden" id="tipo-compra" value="combo">
+            <div class="mb-3 bg-pink-50 p-2 text-center rounded-lg border border-pink-200 text-pink-800 font-bold text-sm shadow-sm">
+                Venta exclusiva en Combo (${productoActivo.unidades} piezas)
+            </div>
+        `;
+    } 
+    // Caso 3: SOLO tiene precio de UNIDAD
+    else {
+        precioInicial = productoActivo.precio;
+        selectorCompra = `<input type="hidden" id="tipo-compra" value="unidad">`;
     }
 
     contenido.innerHTML = `
@@ -165,7 +184,7 @@
             ${controlesCarrusel}
         </div>
         <h2 class="text-2xl font-bold text-gray-800">${productoActivo.nombre}</h2>
-        <p id="precio-display" class="text-xl text-fucsia font-bold mb-2">$${productoActivo.precio.toFixed(2)}</p>
+        <p id="precio-display" class="text-xl text-fucsia font-bold mb-2">$${precioInicial.toFixed(2)}</p>
         <p class="text-gray-600 text-sm mb-4">${productoActivo.descripcion}</p>
         <hr class="mb-4">
         ${selectorCompra}
@@ -179,16 +198,6 @@
     generarFilas();
 }
 
-
-function cambiarImagen(direccion) {
-    imgIndexActual += direccion;
-    if(imgIndexActual >= productoActivo.imgs.length) imgIndexActual = 0;
-    if(imgIndexActual < 0) imgIndexActual = productoActivo.imgs.length - 1;
-    document.getElementById('img-detalle').src = productoActivo.imgs[imgIndexActual];
-    document.getElementById('img-counter').innerText = `${imgIndexActual + 1} / ${productoActivo.imgs.length}`;
-}
-
-
 function generarFilas() {
     let cantidad = parseInt(document.getElementById('cant-detalle').value);
     if (isNaN(cantidad) || cantidad < 1) cantidad = 1;
@@ -197,7 +206,8 @@ function generarFilas() {
     let tipo = selector ? selector.value : 'unidad';
     let unids = (tipo === 'combo') ? productoActivo.unidades : 1;
 
-    if(selector) {
+    // Solo actualiza el precio en pantalla si el usuario está usando el menú desplegable (Caso 1)
+    if(selector && selector.tagName === 'SELECT') {
         let precioVisual = tipo === 'combo' ? productoActivo.precio_combo : productoActivo.precio;
         document.getElementById('precio-display').innerText = '$' + precioVisual.toFixed(2);
     }
