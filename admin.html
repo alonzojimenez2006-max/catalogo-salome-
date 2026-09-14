@@ -213,22 +213,23 @@ function prepararEdicion(id) {
 }
 
 async function guardarProducto() {
-    const nombre = document.getElementById('form-nombre').value;
-    const descripcion = document.getElementById('form-descripcion').value;
+    // Si se deja vacío, guarda lo que haya o asigna valores por defecto para no romper la página
+    const nombre = document.getElementById('form-nombre').value || "Sin nombre";
+    const descripcion = document.getElementById('form-descripcion').value || "";
     
-    // Si dejas el campo vacío, se guarda como 0
+    // Los precios vacíos ahora pasan sin problema como 0
     const precio = parseFloat(document.getElementById('form-precio').value) || 0;
     const precio_combo = parseFloat(document.getElementById('form-precio-combo').value) || 0;
     const unidades = parseInt(document.getElementById('form-unidades').value) || 1;
     
-    const imgs = document.getElementById('form-imgs').value.split(',').map(s => s.trim()).filter(s => s);
-    const colores = document.getElementById('form-colores').value.split(',').map(s => s.trim()).filter(s => s);
-    const tallas = document.getElementById('form-tallas').value.split(',').map(s => s.trim()).filter(s => s);
-
-    // Nueva validación: Exige el nombre, las fotos y al menos un precio mayor a 0
-    if(!nombre || imgs.length === 0 || (precio === 0 && precio_combo === 0)) {
-        return alert("Debes ingresar el Nombre, las Imágenes y al menos un Precio (Unidad o Combo).");
-    }
+    const imgsRaw = document.getElementById('form-imgs').value;
+    const imgs = imgsRaw ? imgsRaw.split(',').map(s => s.trim()).filter(s => s) : ["https://via.placeholder.com/400?text=Sin+Imagen"];
+    
+    const coloresRaw = document.getElementById('form-colores').value;
+    const colores = coloresRaw ? coloresRaw.split(',').map(s => s.trim()).filter(s => s) : [];
+    
+    const tallasRaw = document.getElementById('form-tallas').value;
+    const tallas = tallasRaw ? tallasRaw.split(',').map(s => s.trim()).filter(s => s) : [];
 
     const producto = { 
         nombre: nombre, 
@@ -256,7 +257,7 @@ async function guardarProducto() {
             cargarProductos();
             alert("¡Prenda o combo guardado con éxito!");
         } else {
-            alert("El servidor rechazó los datos.");
+            alert("Error: El servidor rechazó los datos.");
         }
     } catch (error) {
         alert("Error de conexión.");
