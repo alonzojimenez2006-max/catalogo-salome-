@@ -48,10 +48,9 @@
         <!-- PANEL IZQUIERDO: Detalles del Producto -->
         <section id="panel-detalle" class="fixed inset-0 z-50 bg-white p-5 overflow-y-auto transform translate-y-full transition-transform duration-300 md:relative md:transform-none md:z-auto md:w-2/5 md:rounded-xl md:shadow-lg md:sticky md:top-36 md:flex flex-col hidden">
             
-            <button onclick="cerrarDetalle()" class="md:hidden absolute top-4 right-4 bg-gray-100 text-gray-600 rounded-full p-2 z-10 hover:bg-gray-200">
-                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+            <button type="button" onclick="cerrarDetalle()" class="md:hidden absolute top-4 right-4 bg-white text-gray-900 rounded-full p-2.5 z-[60] shadow-2xl border border-gray-200 active:scale-95 cursor-pointer flex items-center justify-center">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12"></path></svg>
             </button>
-
             <!-- Sección central vacía con el logo de marca de agua -->
             <div id="contenido-detalle" class="mt-8 md:mt-0 h-full flex flex-col justify-center">
                 <div class="text-center text-gray-400 py-20 hidden md:flex flex-col items-center">
@@ -110,6 +109,9 @@
                 listaA_Mostrar.forEach(prod => {
                     const badgeCombo = prod.unidades > 1 ? `<span class="absolute top-2 left-2 bg-fucsia text-white text-[10px] font-bold px-2 py-1 rounded shadow">COMBO DE ${prod.unidades}</span>` : '';
                     
+                    // Si no hay precio por unidad, muestra el precio del combo en la tarjeta principal
+                    let precioMostrar = prod.precio > 0 ? prod.precio : prod.precio_combo;
+
                     const card = `
                         <div onclick="cargarDetalle(${prod.id})" class="bg-white border rounded-xl p-3 shadow-sm hover:shadow-md transition cursor-pointer flex flex-col h-full group relative">
                             ${badgeCombo}
@@ -117,7 +119,7 @@
                                 <img src="${prod.imgs[0]}" class="w-full h-40 object-cover group-hover:scale-105 transition duration-300">
                             </div>
                             <h3 class="font-bold text-sm text-gray-800">${prod.nombre}</h3>
-                            <p class="text-fucsia mb-1 font-bold mt-auto">$${prod.precio.toFixed(2)}</p>
+                            <p class="text-fucsia mb-1 font-bold mt-auto">$${precioMostrar.toFixed(2)}</p>
                         </div>
                     `;
                     grid.innerHTML += card;
