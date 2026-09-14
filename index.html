@@ -132,188 +132,145 @@
         }
 
         function cargarDetalle(idProducto) {
-            productoActivo = productosBase.find(p => p.id === idProducto);
-            imgIndexActual = 0;
+    productoActivo = productosBase.find(p => p.id === idProducto);
+    imgIndexActual = 0;
+    const panel = document.getElementById('panel-detalle');
+    const contenido = document.getElementById('contenido-detalle');
+    
+    panel.classList.remove('hidden');
+    setTimeout(() => panel.classList.remove('translate-y-full'), 10);
 
-            const panel = document.getElementById('panel-detalle');
-            const contenido = document.getElementById('contenido-detalle');
-            
-            panel.classList.remove('hidden');
-            setTimeout(() => panel.classList.remove('translate-y-full'), 10);
+    let controlesCarrusel = productoActivo.imgs.length > 1 ? `
+        <button onclick="cambiarImagen(-1)" class="absolute left-2 top-1/2 transform -translate-y-1/2 bg-white/80 rounded-full p-2 shadow"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg></button>
+        <button onclick="cambiarImagen(1)" class="absolute right-2 top-1/2 transform -translate-y-1/2 bg-white/80 rounded-full p-2 shadow"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg></button>
+        <div class="absolute bottom-2 right-2 bg-black/50 text-white text-xs px-2 py-1 rounded-full"><span id="img-counter">1 / ${productoActivo.imgs.length}</span></div>
+    ` : '';
 
-            let controlesCarrusel = productoActivo.imgs.length > 1 ? `
-                <button onclick="cambiarImagen(-1)" class="absolute left-2 top-1/2 transform -translate-y-1/2 bg-white/80 rounded-full p-2 shadow"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg></button>
-                <button onclick="cambiarImagen(1)" class="absolute right-2 top-1/2 transform -translate-y-1/2 bg-white/80 rounded-full p-2 shadow"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg></button>
-                <div class="absolute bottom-2 right-2 bg-black/50 text-white text-xs px-2 py-1 rounded-full"><span id="img-counter">1 / ${productoActivo.imgs.length}</span></div>
-            ` : '';
+    let selectorCompra = '';
+    if (productoActivo.unidades > 1 && productoActivo.precio_combo > 0) {
+        selectorCompra = `
+            <div class="mb-3 bg-pink-50 p-3 rounded-lg border border-pink-100">
+                <label class="font-bold text-sm text-pink-900 block mb-1">Elige cómo comprar:</label>
+                <select id="tipo-compra" onchange="generarFilas()" class="w-full border-pink-200 rounded p-2 text-sm bg-white font-bold text-gray-800 outline-none focus:ring-2 focus:ring-pink-500 shadow-sm">
+                    <option value="unidad">1 Unidad - $${productoActivo.precio.toFixed(2)}</option>
+                    <option value="combo">Combo de ${productoActivo.unidades} piezas - $${productoActivo.precio_combo.toFixed(2)}</option>
+                </select>
+            </div>
+        `;
+    }
 
-            contenido.innerHTML = `
-                <div class="relative w-full h-72 bg-gray-100 rounded-lg mb-4 overflow-hidden border border-gray-200">
-                    <img id="img-detalle" src="${productoActivo.imgs[0]}" class="w-full h-full object-cover">
-                    ${controlesCarrusel}
+    contenido.innerHTML = `
+        <div class="relative w-full h-72 bg-gray-100 rounded-lg mb-4 overflow-hidden border border-gray-200">
+            <img id="img-detalle" src="${productoActivo.imgs[0]}" class="w-full h-full object-cover">
+            ${controlesCarrusel}
+        </div>
+        <h2 class="text-2xl font-bold text-gray-800">${productoActivo.nombre}</h2>
+        <p id="precio-display" class="text-xl text-fucsia font-bold mb-2">$${productoActivo.precio.toFixed(2)}</p>
+        <p class="text-gray-600 text-sm mb-4">${productoActivo.descripcion}</p>
+        <hr class="mb-4">
+        ${selectorCompra}
+        <div class="mb-2 flex items-center justify-between">
+            <label class="font-bold text-sm text-gray-700">Cantidad (Paquetes):</label>
+            <input type="number" id="cant-detalle" value="1" min="1" oninput="generarFilas()" class="border rounded-lg w-16 text-center p-1.5 text-sm bg-gray-50 font-bold outline-none focus:ring-2 focus:ring-pink-500">
+        </div>
+        <div id="variantes-detalle" class="flex flex-col mb-4 max-h-48 overflow-y-auto scroll-variantes pr-1"></div>
+        <button onclick="agregarAlCarrito()" class="w-full bg-gray-900 text-white font-bold py-3 rounded-lg shadow hover:bg-black transition mt-auto">AÑADIR AL PEDIDO</button>
+    `;
+    generarFilas();
+}
+
+function generarFilas() {
+    let cantidad = parseInt(document.getElementById('cant-detalle').value);
+    if (isNaN(cantidad) || cantidad < 1) cantidad = 1;
+
+    const selector = document.getElementById('tipo-compra');
+    let tipo = selector ? selector.value : 'unidad';
+    let unids = (tipo === 'combo') ? productoActivo.unidades : 1;
+
+    if(selector) {
+        let precioVisual = tipo === 'combo' ? productoActivo.precio_combo : productoActivo.precio;
+        document.getElementById('precio-display').innerText = '$' + precioVisual.toFixed(2);
+    }
+
+    const contenedor = document.getElementById('variantes-detalle');
+    let opcionesColor = productoActivo.colores.map(c => `<option value="${c}">${c}</option>`).join('');
+    let opcionesTalla = productoActivo.tallas.map(t => `<option value="${t}">${t}</option>`).join('');
+    contenedor.innerHTML = ''; 
+    
+    for (let c = 1; c <= cantidad; c++) {
+        if (unids > 1) contenedor.innerHTML += `<div class="text-[11px] font-bold text-pink-600 mt-2 mb-1 uppercase tracking-wide">Configurando Combo #${c}</div>`;
+        for (let u = 1; u <= unids; u++) {
+            contenedor.innerHTML += `
+                <div class="flex gap-2 items-center bg-gray-50 p-2 rounded-lg border border-gray-200 mb-1.5">
+                    <span class="text-xs font-bold text-gray-400 w-4">${unids > 1 ? u : c}</span>
+                    <select id="color-act-${c}-${u}" class="flex-1 text-sm p-1.5 border rounded bg-white outline-none"><option value="" disabled selected>Color...</option>${opcionesColor}</select>
+                    <select id="talla-act-${c}-${u}" class="flex-1 text-sm p-1.5 border rounded bg-white outline-none"><option value="" disabled selected>Talla...</option>${opcionesTalla}</select>
                 </div>
-                <h2 class="text-2xl font-bold text-gray-800">${productoActivo.nombre}</h2>
-                <p class="text-xl text-fucsia font-bold mb-2">$${productoActivo.precio.toFixed(2)}</p>
-                <p class="text-gray-600 text-sm mb-4">${productoActivo.descripcion}</p>
-                <hr class="mb-4">
-                <div class="mb-2 flex items-center justify-between">
-                    <label class="font-bold text-sm text-gray-700">Cantidad (Paquetes):</label>
-                    <input type="number" id="cant-detalle" value="1" min="1" oninput="generarFilas()" class="border rounded-lg w-16 text-center p-1.5 text-sm bg-gray-50 font-bold outline-none focus:ring-2 focus:ring-pink-500">
-                </div>
-                <div id="variantes-detalle" class="flex flex-col mb-4 max-h-48 overflow-y-auto scroll-variantes pr-1"></div>
-                <button onclick="agregarAlCarrito()" class="w-full bg-gray-900 text-white font-bold py-3 rounded-lg shadow hover:bg-black transition mt-auto">AÑADIR AL PEDIDO</button>
             `;
-
-            generarFilas();
         }
+    }
+}
 
-        function cerrarDetalle() {
-            const panel = document.getElementById('panel-detalle');
-            panel.classList.add('translate-y-full');
-            setTimeout(() => panel.classList.add('hidden'), 300);
-        }
+function agregarAlCarrito() {
+    let cantidad = parseInt(document.getElementById('cant-detalle').value);
+    const selector = document.getElementById('tipo-compra');
+    let tipo = selector ? selector.value : 'unidad';
+    let unids = (tipo === 'combo') ? productoActivo.unidades : 1;
+    let precioFinal = tipo === 'combo' ? productoActivo.precio_combo : productoActivo.precio;
 
-        function cambiarImagen(direccion) {
-            imgIndexActual += direccion;
-            if(imgIndexActual >= productoActivo.imgs.length) imgIndexActual = 0;
-            if(imgIndexActual < 0) imgIndexActual = productoActivo.imgs.length - 1;
-            document.getElementById('img-detalle').src = productoActivo.imgs[imgIndexActual];
-            document.getElementById('img-counter').innerText = `${imgIndexActual + 1} / ${productoActivo.imgs.length}`;
-        }
-
-        function generarFilas() {
-            let cantidad = parseInt(document.getElementById('cant-detalle').value);
-            const contenedor = document.getElementById('variantes-detalle');
-            if (isNaN(cantidad) || cantidad < 1) cantidad = 1;
-
-            let unids = productoActivo.unidades || 1;
-            let opcionesColor = productoActivo.colores.map(c => `<option value="${c}">${c}</option>`).join('');
-            let opcionesTalla = productoActivo.tallas.map(t => `<option value="${t}">${t}</option>`).join('');
-
-            contenedor.innerHTML = ''; 
-            
-            // Ciclo 1: Por cada paquete o combo que lleve el cliente
-            for (let c = 1; c <= cantidad; c++) {
-                if (unids > 1) {
-                    contenedor.innerHTML += `<div class="text-[11px] font-bold text-pink-600 mt-2 mb-1 uppercase tracking-wide">Configurando Combo #${c}</div>`;
-                }
-                
-                // Ciclo 2: Por cada prenda dentro del combo
-                for (let u = 1; u <= unids; u++) {
-                    contenedor.innerHTML += `
-                        <div class="flex gap-2 items-center bg-gray-50 p-2 rounded-lg border border-gray-200 mb-1.5">
-                            <span class="text-xs font-bold text-gray-400 w-4">${unids > 1 ? u : c}</span>
-                            <select id="color-act-${c}-${u}" class="flex-1 text-sm p-1.5 border rounded bg-white outline-none"><option value="" disabled selected>Color...</option>${opcionesColor}</select>
-                            <select id="talla-act-${c}-${u}" class="flex-1 text-sm p-1.5 border rounded bg-white outline-none"><option value="" disabled selected>Talla...</option>${opcionesTalla}</select>
-                        </div>
-                    `;
-                }
+    for (let c = 1; c <= cantidad; c++) {
+        for (let u = 1; u <= unids; u++) {
+            if(!document.getElementById(`color-act-${c}-${u}`).value || !document.getElementById(`talla-act-${c}-${u}`).value) {
+                return alert(`Por favor, selecciona el Color y la Talla para todas las piezas.`);
             }
         }
+    }
 
-        function agregarAlCarrito() {
-            let cantidad = parseInt(document.getElementById('cant-detalle').value);
-            let unids = productoActivo.unidades || 1;
-
-            // Validación rigurosa
-            for (let c = 1; c <= cantidad; c++) {
-                for (let u = 1; u <= unids; u++) {
-                    if(!document.getElementById(`color-act-${c}-${u}`).value || !document.getElementById(`talla-act-${c}-${u}`).value) {
-                        return alert(`Por favor, selecciona el Color y la Talla para todas las piezas del combo.`);
-                    }
-                }
-            }
-
-            // Guardar la estructura en el carrito
-            for (let c = 1; c <= cantidad; c++) {
-                let selecciones = [];
-                for (let u = 1; u <= unids; u++) {
-                    selecciones.push({
-                        color: document.getElementById(`color-act-${c}-${u}`).value,
-                        talla: document.getElementById(`talla-act-${c}-${u}`).value
-                    });
-                }
-                carrito.push({ ...productoActivo, selecciones: selecciones });
-            }
-            
-            document.getElementById('cant-detalle').value = 1;
-            generarFilas();
-            actualizarCarrito();
-            
-            if(window.innerWidth < 768) cerrarDetalle();
-            toggleCarrito(true);
-        }
-
-        function actualizarCarrito() {
-            const lista = document.getElementById('lista-carrito');
-            const totalSpan = document.getElementById('total-precio');
-            document.getElementById('contador-carrito').innerText = carrito.length;
-            lista.innerHTML = '';
-            let total = 0;
-
-            if(carrito.length === 0) lista.innerHTML = '<p class="text-gray-500 text-center text-sm mt-4">Carrito vacío.</p>';
-
-            carrito.forEach((item, index) => {
-                total += item.precio;
-                
-                // Generar el desglose de prendas visualmente
-                let configHTML = item.selecciones.map((sel, i) => 
-                    `<div class="text-[11px] text-gray-500 mt-0.5"><span class="font-bold text-gray-400">#${i+1}</span> ${sel.color} - Talla ${sel.talla}</div>`
-                ).join('');
-
-                lista.innerHTML += `
-                    <div class="flex justify-between items-start border-b pb-3 pt-2 text-sm">
-                        <div class="flex-1 pr-2">
-                            <p class="font-bold text-gray-800 leading-tight">${item.nombre}</p>
-                            <div class="mt-1">${configHTML}</div>
-                        </div>
-                        <div class="flex items-center gap-3">
-                            <p class="font-bold text-fucsia mt-1">$${item.precio.toFixed(2)}</p>
-                            <button onclick="eliminarDelCarrito(${index})" class="text-gray-300 hover:text-red-500 font-bold text-xl leading-none">&times;</button>
-                        </div>
-                    </div>
-                `;
+    for (let c = 1; c <= cantidad; c++) {
+        let selecciones = [];
+        for (let u = 1; u <= unids; u++) {
+            selecciones.push({
+                color: document.getElementById(`color-act-${c}-${u}`).value,
+                talla: document.getElementById(`talla-act-${c}-${u}`).value
             });
-            totalSpan.innerText = total.toFixed(2);
         }
+        carrito.push({ ...productoActivo, precio: precioFinal, selecciones: selecciones, tipoCompra: tipo });
+    }
+    
+    document.getElementById('cant-detalle').value = 1;
+    generarFilas();
+    actualizarCarrito();
+    if(window.innerWidth < 768) cerrarDetalle();
+    toggleCarrito(true);
+}
 
-        function eliminarDelCarrito(index) {
-            carrito.splice(index, 1);
-            actualizarCarrito();
-        }
+function enviarWhatsApp() {
+    if(carrito.length === 0) return alert("El carrito está vacío.");
+    
+    const urlParams = new URLSearchParams(window.location.search);
+    const asesorLink = urlParams.get('asesor');
+    const numeroPorDefecto = "584126530612"; // Reemplaza por el principal
+    const telefonoDestino = asesorLink ? asesorLink : numeroPorDefecto;
 
-        function toggleCarrito(forceOpen = false) {
-            const panel = document.getElementById('carrito-panel');
-            if(forceOpen) panel.classList.remove('translate-x-full');
-            else panel.classList.toggle('translate-x-full');
-        }
-
-        function enviarWhatsApp() {
-            if(carrito.length === 0) return alert("El carrito está vacío.");
-            
-            // 1. Generar un código de orden único (Ej: CS-X7B9Q2)
-            const codigoOrden = "CS-" + Math.random().toString(36).substr(2, 6).toUpperCase();
-            
-            // 2. Armar el encabezado del mensaje con el código
-            let mensaje = `*NUEVO PEDIDO - CONFECCIONES SALOMÉ*%0A`;
-            mensaje += `*CÓDIGO DE ORDEN:* ${codigoOrden}%0A%0A`;
-            mensaje += `*Detalle de la compra:*%0A`;
-            
-            // 3. Listar los productos y sus características
-            carrito.forEach((item, idx) => { 
-                mensaje += `*${idx + 1}. ${item.nombre}* ($${item.precio})%0A`; 
-                item.selecciones.forEach((sel, i) => {
-                    mensaje += `   - Pieza ${i+1}: ${sel.color} / Talla ${sel.talla}%0A`;
-                });
-                mensaje += `%0A`;
-            });
-            
-            // 4. Agregar el total
-            mensaje += `*TOTAL: $${document.getElementById('total-precio').innerText}*%0A%0AConfirmo mi pedido.`;
-            
-            // 5. Enviar a WhatsApp
-            window.open(`https://wa.me/584126530612?text=${mensaje}`, '_blank');
-        }
+    const codigoOrden = "CS-" + Math.random().toString(36).substr(2, 6).toUpperCase();
+    
+    let mensaje = `*NUEVO PEDIDO - CONFECCIONES SALOMÉ*%0A`;
+    mensaje += `*CÓDIGO DE ORDEN:* ${codigoOrden}%0A%0A`;
+    mensaje += `*Detalle de la compra:*%0A`;
+    
+    carrito.forEach((item, idx) => { 
+        let etiqueta = item.tipoCompra === 'combo' ? `(Combo)` : `(Unidad)`;
+        mensaje += `*${idx + 1}. ${item.nombre} ${etiqueta}* ($${item.precio})%0A`; 
+        item.selecciones.forEach((sel, i) => {
+            mensaje += `   - Pieza ${i+1}: ${sel.color} / Talla ${sel.talla}%0A`;
+        });
+        mensaje += `%0A`;
+    });
+    
+    mensaje += `*TOTAL: $${document.getElementById('total-precio').innerText}*%0A%0AConfirmo mi pedido.`;
+    
+    window.open(`https://wa.me/${telefonoDestino}?text=${mensaje}`, '_blank');
+}
 
         async function cargarCatalogoDesdeAPI() {
             try {
