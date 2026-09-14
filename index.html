@@ -141,9 +141,9 @@
     setTimeout(() => panel.classList.remove('translate-y-full'), 10);
 
     let controlesCarrusel = productoActivo.imgs.length > 1 ? `
-        <button onclick="cambiarImagen(-1)" class="absolute left-2 top-1/2 transform -translate-y-1/2 bg-white/80 rounded-full p-2 shadow"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg></button>
-        <button onclick="cambiarImagen(1)" class="absolute right-2 top-1/2 transform -translate-y-1/2 bg-white/80 rounded-full p-2 shadow"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg></button>
-        <div class="absolute bottom-2 right-2 bg-black/50 text-white text-xs px-2 py-1 rounded-full"><span id="img-counter">1 / ${productoActivo.imgs.length}</span></div>
+        <button type="button" onclick="cambiarImagen(-1)" class="absolute left-2 top-1/2 transform -translate-y-1/2 bg-white/90 rounded-full p-2.5 shadow-lg z-20 hover:scale-105 active:scale-95 transition cursor-pointer"><svg class="w-6 h-6 text-gray-900" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 19l-7-7 7-7"></path></svg></button>
+        <button type="button" onclick="cambiarImagen(1)" class="absolute right-2 top-1/2 transform -translate-y-1/2 bg-white/90 rounded-full p-2.5 shadow-lg z-20 hover:scale-105 active:scale-95 transition cursor-pointer"><svg class="w-6 h-6 text-gray-900" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7"></path></svg></button>
+        <div class="absolute bottom-3 right-3 bg-black/70 text-white text-xs font-bold px-3 py-1.5 rounded-full z-20 shadow-md"><span id="img-counter">1 / ${productoActivo.imgs.length}</span></div>
     ` : '';
 
     let selectorCompra = '';
@@ -178,6 +178,16 @@
     `;
     generarFilas();
 }
+
+
+function cambiarImagen(direccion) {
+    imgIndexActual += direccion;
+    if(imgIndexActual >= productoActivo.imgs.length) imgIndexActual = 0;
+    if(imgIndexActual < 0) imgIndexActual = productoActivo.imgs.length - 1;
+    document.getElementById('img-detalle').src = productoActivo.imgs[imgIndexActual];
+    document.getElementById('img-counter').innerText = `${imgIndexActual + 1} / ${productoActivo.imgs.length}`;
+}
+
 
 function generarFilas() {
     let cantidad = parseInt(document.getElementById('cant-detalle').value);
