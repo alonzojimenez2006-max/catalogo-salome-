@@ -190,6 +190,10 @@
     document.getElementById('modal-producto').classList.remove('hidden');
 }
 
+function cerrarModal() {
+    document.getElementById('modal-producto').classList.add('hidden');
+}
+
 function prepararEdicion(id) {
     const producto = window.productosActuales.find(p => p.id === id);
     if(!producto) return;
