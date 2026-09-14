@@ -294,6 +294,82 @@ function enviarWhatsApp() {
     window.open(`https://wa.me/${telefonoDestino}?text=${mensaje}`, '_blank');
 }
 
+function toggleCarrito(forzarAbrir = false) {
+    const panel = document.getElementById('carrito-panel');
+    if (forzarAbrir === true) {
+        panel.classList.remove('translate-x-full');
+    } else {
+        panel.classList.toggle('translate-x-full');
+    }
+}
+
+function actualizarCarrito() {
+    const lista = document.getElementById('lista-carrito');
+    const contador = document.getElementById('contador-carrito');
+    const total = document.getElementById('total-precio');
+
+    lista.innerHTML = '';
+    let sumaTotal = 0;
+
+    if (carrito.length === 0) {
+        lista.innerHTML = '<p class="text-gray-500 text-center py-10 font-medium">Tu carrito está vacío</p>';
+    } else {
+        carrito.forEach((item, index) => {
+            sumaTotal += item.precio;
+            
+            let detalles = item.selecciones.map((s, i) => `<div class="text-xs text-gray-500">Pz ${i+1}: ${s.color} / ${s.talla}</div>`).join('');
+            let etiqueta = item.tipoCompra === 'combo' ? `<span class="bg-fucsia text-white text-[10px] px-1 rounded ml-1 font-bold">Combo</span>` : '';
+
+            lista.innerHTML += `
+                <div class="flex items-center gap-3 bg-white p-2 rounded-lg shadow-sm border border-gray-100">
+                    <img src="${item.imgs[0]}" class="w-16 h-16 object-cover rounded">
+                    <div class="flex-1">
+                        <h4 class="font-bold text-sm text-gray-800 leading-tight mb-1">${item.nombre} ${etiqueta}</h4>
+                        ${detalles}
+                        <div class="font-bold text-fucsia text-sm mt-1">$${item.precio.toFixed(2)}</div>
+                    </div>
+                    <button onclick="eliminarDelCarrito(${index})" class="text-red-400 hover:text-red-600 font-bold p-2 text-2xl transition">&times;</button>
+                </div>
+            `;
+        });
+    }
+
+    contador.innerText = carrito.length;
+    total.innerText = sumaTotal.toFixed(2);
+}
+
+function eliminarDelCarrito(index) {
+    carrito.splice(index, 1);
+    actualizarCarrito();
+}
+
+function cerrarDetalle() {
+    const panel = document.getElementById('panel-detalle');
+    panel.classList.add('translate-y-full'); 
+    
+    setTimeout(() => {
+        panel.classList.add('hidden');
+        document.getElementById('contenido-detalle').innerHTML = `
+            <div class="text-center text-gray-400 py-20 hidden md:flex flex-col items-center">
+                <img src="logo.png" class="h-24 mb-5 opacity-40 rounded-xl grayscale transition hover:grayscale-0 duration-300">
+                <p class="font-medium">Selecciona un producto del catálogo.</p>
+            </div>
+        `;
+    }, 300);
+}
+
+function cambiarImagen(direccion) {
+    if (!productoActivo || productoActivo.imgs.length <= 1) return;
+    imgIndexActual += direccion;
+    
+    if (imgIndexActual >= productoActivo.imgs.length) imgIndexActual = 0;
+    if (imgIndexActual < 0) imgIndexActual = productoActivo.imgs.length - 1;
+    
+    document.getElementById('img-detalle').src = productoActivo.imgs[imgIndexActual];
+    const counter = document.getElementById('img-counter');
+    if(counter) counter.innerText = `${imgIndexActual + 1} /${productoActivo.imgs.length}`;
+}
+
         async function cargarCatalogoDesdeAPI() {
             try {
                 const respuesta = await fetch("/api/productos");                productosBase = await respuesta.json();
