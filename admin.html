@@ -76,12 +76,16 @@
                 </div>
                 <div class="flex gap-4">
                     <div class="flex-1">
-                        <label class="text-xs font-bold text-gray-600">Precio total ($)</label>
-                        <input type="number" step="0.01" id="form-precio" placeholder="12.00" class="w-full border rounded-lg p-2.5 text-sm focus:ring-2 focus:ring-pink-500 outline-none bg-gray-50 font-bold">
+                        <label class="text-xs font-bold text-gray-600">Precio x Unidad ($)</label>
+                        <input type="number" step="0.01" id="form-precio" class="w-full border rounded-lg p-2.5 text-sm bg-gray-50 font-bold outline-none focus:ring-2 focus:ring-pink-500">
                     </div>
                     <div class="flex-1">
-                        <label class="text-xs font-bold text-gray-600">Unidades en el combo</label>
-                        <input type="number" id="form-unidades" value="1" min="1" class="w-full border rounded-lg p-2.5 text-sm focus:ring-2 focus:ring-pink-500 outline-none bg-gray-50 font-bold">
+                        <label class="text-xs font-bold text-gray-600">Precio Combo ($)</label>
+                        <input type="number" step="0.01" id="form-precio-combo" class="w-full border rounded-lg p-2.5 text-sm bg-gray-50 font-bold outline-none focus:ring-2 focus:ring-pink-500">
+                    </div>
+                    <div class="flex-1">
+                        <label class="text-xs font-bold text-gray-600">Unidades en combo</label>
+                        <input type="number" id="form-unidades" value="1" min="1" class="w-full border rounded-lg p-2.5 text-sm bg-gray-50 font-bold outline-none focus:ring-2 focus:ring-pink-500">
                     </div>
                 </div>
                 <div>
@@ -171,95 +175,86 @@
         }
 
         function abrirModal(modoEdicion = false) {
-            if(!modoEdicion) {
-                idEdicion = null;
-                document.getElementById('form-unidades').value = '1';
-                document.getElementById('modal-titulo').innerText = "Crear Nuevo Producto";
-                document.getElementById('form-nombre').value = '';
-                document.getElementById('form-descripcion').value = '';
-                document.getElementById('form-precio').value = '';
-                document.getElementById('form-imgs').value = '';
-                document.getElementById('form-colores').value = '';
-                document.getElementById('form-tallas').value = '';
-            }
-            document.getElementById('modal-producto').classList.remove('hidden');
+    if(!modoEdicion) {
+        idEdicion = null;
+        document.getElementById('form-unidades').value = '1';
+        document.getElementById('modal-titulo').innerText = "Crear Nuevo Producto";
+        document.getElementById('form-nombre').value = '';
+        document.getElementById('form-descripcion').value = '';
+        document.getElementById('form-precio').value = '';
+        document.getElementById('form-precio-combo').value = '';
+        document.getElementById('form-imgs').value = '';
+        document.getElementById('form-colores').value = '';
+        document.getElementById('form-tallas').value = '';
+    }
+    document.getElementById('modal-producto').classList.remove('hidden');
+}
+
+function prepararEdicion(id) {
+    const producto = window.productosActuales.find(p => p.id === id);
+    if(!producto) return;
+
+    idEdicion = id;
+    document.getElementById('form-unidades').value = producto.unidades || 1;
+    document.getElementById('modal-titulo').innerText = "Editar Producto #" + id;
+    document.getElementById('form-nombre').value = producto.nombre;
+    document.getElementById('form-descripcion').value = producto.descripcion;
+    document.getElementById('form-precio').value = producto.precio;
+    document.getElementById('form-precio-combo').value = producto.precio_combo || 0;
+    document.getElementById('form-imgs').value = producto.imgs.join(', ');
+    document.getElementById('form-colores').value = producto.colores.join(', ');
+    document.getElementById('form-tallas').value = producto.tallas.join(', ');
+
+    abrirModal(true);
+}
+
+async function guardarProducto() {
+    const nombre = document.getElementById('form-nombre').value;
+    const descripcion = document.getElementById('form-descripcion').value;
+    const precio = parseFloat(document.getElementById('form-precio').value);
+    const precio_combo = parseFloat(document.getElementById('form-precio-combo').value) || 0;
+    const unidades = parseInt(document.getElementById('form-unidades').value) || 1;
+    
+    const imgs = document.getElementById('form-imgs').value.split(',').map(s => s.trim()).filter(s => s);
+    const colores = document.getElementById('form-colores').value.split(',').map(s => s.trim()).filter(s => s);
+    const tallas = document.getElementById('form-tallas').value.split(',').map(s => s.trim()).filter(s => s);
+
+    if(!nombre || isNaN(precio) || imgs.length === 0) {
+        return alert("Faltan datos obligatorios.");
+    }
+
+    const producto = { 
+        nombre: nombre, 
+        descripcion: descripcion, 
+        precio: precio, 
+        precio_combo: precio_combo,
+        imgs: imgs, 
+        colores: colores, 
+        tallas: tallas, 
+        unidades: unidades 
+    };
+
+    const urlFinal = idEdicion ? `${API_URL}/${idEdicion}` : API_URL;
+    const metodo = idEdicion ? 'PUT' : 'POST';
+
+    try {
+        const response = await fetch(urlFinal, {
+            method: metodo,
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(producto)
+        });
+        
+        if (response.ok) {
+            cerrarModal();
+            cargarProductos();
+            alert("¡Prenda o combo guardado con éxito!");
+        } else {
+            alert("El servidor rechazó los datos.");
         }
-
-        function cerrarModal() {
-            document.getElementById('modal-producto').classList.add('hidden');
-        }
-
-        function prepararEdicion(id) {
-            const producto = window.productosActuales.find(p => p.id === id);
-            if(!producto) return;
-
-            idEdicion = id;
-            document.getElementById('form-unidades').value = producto.unidades || 1;
-            document.getElementById('modal-titulo').innerText = "Editar Producto #" + id;
-            document.getElementById('form-nombre').value = producto.nombre;
-            document.getElementById('form-descripcion').value = producto.descripcion;
-            document.getElementById('form-precio').value = producto.precio;
-            document.getElementById('form-imgs').value = producto.imgs.join(', ');
-            document.getElementById('form-colores').value = producto.colores.join(', ');
-            document.getElementById('form-tallas').value = producto.tallas.join(', ');
-
-            abrirModal(true);
-        }
-
-        async function guardarProducto() {
-            // 1. Capturamos todos los textos y números del formulario
-            const nombre = document.getElementById('form-nombre').value;
-            const descripcion = document.getElementById('form-descripcion').value;
-            const precio = parseFloat(document.getElementById('form-precio').value);
-            
-            // NUEVO: Capturamos las unidades del combo (Si lo dejan vacío, por defecto será 1)
-            const unidades = parseInt(document.getElementById('form-unidades').value) || 1;
-            
-            // 2. Convertimos los textos separados por comas en listas (Arrays)
-            const imgs = document.getElementById('form-imgs').value.split(',').map(s => s.trim()).filter(s => s);
-            const colores = document.getElementById('form-colores').value.split(',').map(s => s.trim()).filter(s => s);
-            const tallas = document.getElementById('form-tallas').value.split(',').map(s => s.trim()).filter(s => s);
-
-            // 3. Validación de seguridad para que no envíen el formulario a medias
-            if(!nombre || isNaN(precio) || imgs.length === 0) {
-                return alert("Faltan datos obligatorios. Asegúrate de poner Nombre, Precio e Imágenes.");
-            }
-
-            // 4. Armamos el "Paquete" de datos EXACTO que espera Python, ahora incluyendo las unidades
-            const producto = { 
-                nombre: nombre, 
-                descripcion: descripcion, 
-                precio: precio, 
-                imgs: imgs, 
-                colores: colores, 
-                tallas: tallas, 
-                unidades: unidades // <-- Aquí se integra el combo a la base de datos
-            };
-
-            // 5. Decidimos si estamos creando uno nuevo (POST) o editando (PUT)
-            const urlFinal = idEdicion ? `${API_URL}/${idEdicion}` : API_URL;
-            const metodo = idEdicion ? 'PUT' : 'POST';
-
-            // 6. Enviamos los datos al servidor
-            try {
-                const response = await fetch(urlFinal, {
-                    method: metodo,
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(producto)
-                });
-                
-                if (response.ok) {
-                    cerrarModal();
-                    cargarProductos(); // Refresca la tabla automáticamente
-                    alert("¡Prenda o combo guardado con éxito!");
-                } else {
-                    alert("El servidor rechazó los datos. Revisa la consola.");
-                }
-            } catch (error) {
-                console.error("Error al guardar:", error);
-                alert("Error de conexión con el servidor Python.");
-            }
-        }
+    } catch (error) {
+        alert("Error de conexión.");
+    }
+}
         async function borrarProducto(id) {
             if(confirm("¿Estás seguro de que deseas eliminar este producto o combo permanentemente?")) {
                 try {
