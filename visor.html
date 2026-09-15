@@ -60,6 +60,14 @@
         }
         cargarBD();
 
+        function limpiarTexto() {
+            // Vacía el cuadro de texto
+            document.getElementById('texto-whatsapp').value = '';
+            // Oculta el panel visual si estaba abierto
+            document.getElementById('resultado-visual').classList.add('hidden');
+            document.getElementById('grid-pedido').innerHTML = '';
+        }
+
         function procesarTexto() {
             const texto = document.getElementById('texto-whatsapp').value;
             if(!texto.includes('*NUEVO PEDIDO')) {
