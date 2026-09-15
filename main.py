@@ -18,6 +18,11 @@ app.add_middleware(
 
 class ProductoAdmin(BaseModel):
     nombre: str
+# ... resto de tus variables ...
+    unidades: int = 1
+
+class EstadoCatalogo(BaseModel):
+    estado: str
     descripcion: str
     precio: float
     precio_combo: float = 0.0
@@ -48,6 +53,19 @@ def init_db():
                 unidades INTEGER DEFAULT 1
             )
         ''')
+        
+        # --- NUEVO: TABLA DE CONFIGURACIÓN ---
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS configuracion (
+                id INTEGER PRIMARY KEY,
+                estado TEXT
+            )
+        ''')
+        cursor.execute("SELECT COUNT(*) FROM configuracion")
+        if cursor.fetchone()[0] == 0:
+            cursor.execute("INSERT INTO configuracion (id, estado) VALUES (1, 'activo')")
+        # -------------------------------------
+
         conn.commit()
         # Parche para actualizar tabla existente sin borrar datos
         try:
@@ -130,6 +148,27 @@ def eliminar_producto(producto_id: int):
     cursor.close()
     conn.close()
     return {"mensaje": "Producto eliminado exitosamente"}
+
+@app.get("/api/estado")
+def obtener_estado():
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT estado FROM configuracion WHERE id = 1")
+    resultado = cursor.fetchone()
+    estado = resultado[0] if resultado else 'activo'
+    cursor.close()
+    conn.close()
+    return {"estado": estado}
+
+@app.put("/api/estado")
+def actualizar_estado(nuevo_estado: EstadoCatalogo):
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute("UPDATE configuracion SET estado = %s WHERE id = 1", (nuevo_estado.estado,))
+    conn.commit()
+    cursor.close()
+    conn.close()
+    return {"mensaje": "Estado actualizado"}
 
 @app.get("/")
 def pagina_principal():
