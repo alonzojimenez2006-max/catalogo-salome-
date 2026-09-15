@@ -295,7 +295,9 @@ function enviarWhatsApp() {
     
     const urlParams = new URLSearchParams(window.location.search);
     const asesorLink = urlParams.get('asesor');
-    const numeroPorDefecto = "584126530612"; // Reemplaza por el principal
+    
+    // Si la URL no tiene la palabra "asesor", envía al principal por defecto
+    const numeroPorDefecto = "584126530612"; 
     const telefonoDestino = asesorLink ? asesorLink : numeroPorDefecto;
 
     const codigoOrden = "CS-" + Math.random().toString(36).substr(2, 6).toUpperCase();
@@ -396,7 +398,23 @@ function cambiarImagen(direccion) {
 
         async function cargarCatalogoDesdeAPI() {
             try {
-                const respuesta = await fetch("/api/productos");                productosBase = await respuesta.json();
+                const resEstado = await fetch("/api/estado");
+                const dataEstado = await resEstado.json();
+
+                if (dataEstado.estado === 'inactivo') {
+                    document.body.innerHTML = `
+                        <div class="min-h-screen bg-gray-100 flex flex-col items-center justify-center p-6 text-center">
+                            <img src="logo.png" alt="Logo" class="h-24 mb-6 grayscale opacity-50 shadow-sm rounded-xl">
+                            <h1 class="text-3xl font-bold text-gray-800 mb-3 uppercase tracking-wider">Catálogo en Pausa</h1>
+                            <p class="text-gray-600 mb-2 font-medium">En este momento no estamos aceptando pedidos.</p>
+                            <p class="text-gray-500 text-sm">Por favor, vuelve más tarde.</p>
+                        </div>
+                    `;
+                    return; 
+                }
+
+                const respuesta = await fetch("/api/productos");
+                productosBase = await respuesta.json();
                 renderizarCatalogo();
             } catch (error) {
                 console.error("Error al conectar con la API:", error);
