@@ -116,7 +116,7 @@
                         // Tiene ambos precios
                         bloquePrecio = `
                             <div class="mt-auto pt-2">
-                                <p class="text-xs text-gray-500 mb-0.5">Detalle: <span class="font-bold text-gray-700">$${prod.precio.toFixed(2)}</span></p>
+                                <p class="text-xs text-gray-500 mb-0.5">Detal: <span class="font-bold text-gray-700">$${prod.precio.toFixed(2)}</span></p>
                                 <p class="text-sm text-fucsia font-bold">Combo x${prod.unidades}: $${prod.precio_combo.toFixed(2)}</p>
                             </div>
                         `;
@@ -128,10 +128,10 @@
                             </div>
                         `;
                     } else {
-                        // Solo tiene precio de detalle (o por defecto)
+                        // Solo tiene precio de detal
                         bloquePrecio = `
                             <div class="mt-auto pt-2">
-                                <p class="text-sm text-fucsia font-bold">Detalle: $${prod.precio.toFixed(2)}</p>
+                                <p class="text-sm text-fucsia font-bold">Detal: $${prod.precio.toFixed(2)}</p>
                             </div>
                         `;
                     }
