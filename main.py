@@ -18,11 +18,6 @@ app.add_middleware(
 
 class ProductoAdmin(BaseModel):
     nombre: str
-# ... resto de tus variables ...
-    unidades: int = 1
-
-class EstadoCatalogo(BaseModel):
-    estado: str
     descripcion: str
     precio: float
     precio_combo: float = 0.0
@@ -30,6 +25,9 @@ class EstadoCatalogo(BaseModel):
     colores: list[str]
     tallas: list[str]
     unidades: int = 1
+
+class EstadoCatalogo(BaseModel):
+    estado: str
 
 DATABASE_URL = os.getenv("DATABASE_URL", "postgresql://neondb_owner:npg_tqQWyp0OHgd4@ep-royal-dust-ax6ybowm.c-4.us-east-2.aws.neon.tech/neondb?sslmode=require")
 
