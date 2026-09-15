@@ -176,6 +176,10 @@ def pagina_principal():
 def pagina_admin():
     return FileResponse("admin.html")
 
+@app.get("/visor")
+def pagina_visor():
+    return FileResponse("visor.html")
+
 @app.get("/logo.png")
 def servir_logo():
     return FileResponse("logo.png")
