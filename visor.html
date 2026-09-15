@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Visor de Pedidos - Confecciones Salomé</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .bg-fucsia { background-color: #b0005a; }
+        .text-fucsia { color: #b0005a; }
+    </style>
+</head>
+<body class="bg-gray-100 font-sans min-h-screen p-4 md:p-8">
+
+    <div class="max-w-3xl mx-auto bg-white p-6 md:p-8 rounded-xl shadow-lg border border-gray-100">
+        <div class="flex items-center gap-4 mb-6 pb-4 border-b">
+            <img src="logo.png" alt="Logo" class="h-12 w-auto object-contain rounded border border-pink-700">
+            <div>
+                <h1 class="text-2xl font-bold text-gray-800">Lector de Pedidos</h1>
+                <p class="text-gray-500 text-sm">Convierte el texto de WhatsApp en imágenes</p>
+            </div>
+        </div>
+        
+        <label class="font-bold text-sm text-gray-700 mb-2 block">Pega aquí el mensaje del cliente:</label>
+        <textarea id="texto-whatsapp" rows="8" class="w-full border border-gray-300 rounded-lg p-4 mb-4 focus:ring-2 focus:ring-pink-500 outline-none bg-gray-50 text-sm font-mono shadow-inner" placeholder="*NUEVO PEDIDO - CONFECCIONES SALOMÉ*%0A*CÓDIGO DE ORDEN:* CS-1A2B3C..."></textarea>
+        
+        <button onclick="procesarTexto()" class="w-full bg-fucsia text-white font-bold py-3.5 rounded-lg shadow hover:bg-pink-800 transition text-lg tracking-wide">
+            GENERAR VISTA GRÁFICA
+        </button>
+        
+        <div id="resultado-visual" class="hidden mt-8 pt-6 border-t border-dashed border-gray-300">
+            <div class="bg-pink-50 border border-pink-100 p-4 rounded-lg flex flex-col md:flex-row justify-between items-center mb-6 shadow-sm">
+                <span class="text-gray-600 font-bold">Orden: <span id="orden-codigo" class="text-fucsia text-xl ml-1"></span></span>
+                <span class="text-gray-600 font-bold mt-2 md:mt-0">Total: <span class="text-fucsia text-2xl ml-1">$<span id="orden-total"></span></span></span>
+            </div>
+            
+            <div id="grid-pedido" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <!-- Aquí se inyectan las tarjetas del pedido -->
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let catalogo = [];
+
+        // Cargamos la base de datos en silencio para poder sacar las fotos
+        async function cargarBD() {
+            try {
+                const res = await fetch('/api/productos');
+                catalogo = await res.json();
+            } catch(e) { 
+                console.error("Error conectando a la API."); 
+            }
+        }
+        cargarBD();
+
+        function procesarTexto() {
+            const texto = document.getElementById('texto-whatsapp').value;
+            if(!texto.includes('*NUEVO PEDIDO')) {
+                return alert("Por favor, pega el mensaje completo de WhatsApp generado por el catálogo.");
+            }
+
+            // Expresiones regulares para cazar los datos del texto
+            const matchCodigo = texto.match(/\*CÓDIGO DE ORDEN:\*\s(CS-[A-Z0-9]+)/);
+            const matchTotal = texto.match(/\*TOTAL:\s\$([0-9.]+)\*/);
+            
+            document.getElementById('orden-codigo').innerText = matchCodigo ? matchCodigo[1] : '----';
+            document.getElementById('orden-total').innerText = matchTotal ? matchTotal[1] : '0.00';
+
+            const lineas = texto.split('\n');
+            let items = [];
+            let itemActual = null;
+
+            lineas.forEach(linea => {
+                const l = linea.trim();
+                
+                // Cazar la línea del producto: ej. *1. Pantalón Cargo (Combo)* ($30)
+                const regexProd = /\*\d+\.\s+(.*?)\s+\((Unidad|Combo)\)\*\s+\(\$([0-9.]+)\)/;
+                if(regexProd.test(l)) {
+                    const partes = l.match(regexProd);
+                    itemActual = { nombre: partes[1], tipo: partes[2], precio: partes[3], piezas: [] };
+                    items.push(itemActual);
+                }
+                
+                // Cazar las selecciones: ej. - Pieza 1: Negro / Talla M
+                const regexPieza = /-\s+Pieza\s+\d+:\s+(.*?)\s+\/\s+Talla\s+(.*)/;
+                if(regexPieza.test(l) && itemActual) {
+                    const p = l.match(regexPieza);
+                    itemActual.piezas.push({ color: p[1], talla: p[2] });
+                }
+            });
+
+            renderizarPedido(items);
+        }
+
+        function renderizarPedido(items) {
+            const grid = document.getElementById('grid-pedido');
+            grid.innerHTML = '';
+            
+            items.forEach(item => {
+                // Buscamos el nombre del producto en la BD para robarle la imagen
+                const prodBD = catalogo.find(p => p.nombre.toLowerCase() === item.nombre.toLowerCase());
+                const imagenUrl = prodBD ? prodBD.imgs[0] : 'https://via.placeholder.com/150?text=Sin+Foto';
+                
+                let detallesHTML = item.piezas.map((pz, i) => `
+                    <div class="text-[11px] text-gray-700 bg-gray-100 p-1.5 rounded mt-1 border border-gray-200">
+                        <span class="font-bold text-gray-400 mr-1">Pz ${i+1}:</span> <b>${pz.color}</b> <span class="mx-1 text-gray-300">|</span> Talla: <b>${pz.talla}</b>
+                    </div>
+                `).join('');
+
+                grid.innerHTML += `
+                    <div class="flex gap-4 border border-gray-200 p-3 rounded-xl shadow-sm bg-white hover:shadow-md transition">
+                        <img src="${imagenUrl}" class="w-24 h-24 object-cover rounded-lg border border-gray-100 shadow-sm">
+                        <div class="flex-1 flex flex-col justify-center">
+                            <h4 class="font-bold text-sm text-gray-800 leading-tight mb-0.5">${item.nombre}</h4>
+                            <span class="text-[10px] bg-gray-800 text-white px-1.5 py-0.5 rounded w-max font-bold mb-1">${item.tipo.toUpperCase()}</span>
+                            <div class="font-bold text-fucsia text-sm mb-1">$${item.precio}</div>
+                            ${detallesHTML}
+                        </div>
+                    </div>
+                `;
+            });
+
+            document.getElementById('resultado-visual').classList.remove('hidden');
+        }
+    </script>
+</body>
+</html>
