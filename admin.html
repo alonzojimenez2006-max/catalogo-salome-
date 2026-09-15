@@ -36,9 +36,14 @@
         <main class="flex-1 p-6 max-w-5xl mx-auto w-full">
             <div class="flex justify-between items-center mb-6">
                 <h1 class="text-2xl font-bold text-gray-800">Inventario Actual</h1>
-                <button onclick="abrirModal()" class="bg-fucsia text-white px-5 py-2.5 rounded-lg font-bold shadow hover:bg-pink-800 transition flex items-center gap-2">
-                    <span>+</span> Nuevo Producto
-                </button>
+                <div class="flex items-center gap-3">
+                    <button onclick="aplicarColorMasivo()" class="bg-gray-800 text-white px-4 py-2.5 rounded-lg font-bold shadow hover:bg-black transition text-sm flex items-center gap-2">
+                        🎨 Color Masivo
+                    </button>
+                    <button onclick="abrirModal()" class="bg-fucsia text-white px-5 py-2.5 rounded-lg font-bold shadow hover:bg-pink-800 transition flex items-center gap-2">
+                        <span>+</span> Nuevo Producto
+                    </button>
+                </div>
             </div>
 
             <!-- Tabla de Datos -->
@@ -290,6 +295,51 @@ async function guardarProducto() {
                 }
             }
         }
+
+        // --- INICIO DE LA NUEVA FUNCIÓN COLOR MASIVO ---
+        async function aplicarColorMasivo() {
+            const nuevoColor = prompt("Escribe el nombre del color que deseas aplicar a TODAS las prendas del catálogo:");
+            if (!nuevoColor || !nuevoColor.trim()) return;
+
+            if (!confirm(`¿Estás seguro de establecer el color "${nuevoColor.trim()}" en TODOS los productos?`)) return;
+
+            const btn = document.querySelector('button[onclick="aplicarColorMasivo()"]');
+            const textoOriginal = btn.innerHTML;
+            btn.innerHTML = "⏳ Procesando...";
+            btn.disabled = true;
+
+            try {
+                for (let prod of window.productosActuales) {
+                    const productoActualizado = {
+                        nombre: prod.nombre,
+                        descripcion: prod.descripcion,
+                        precio: prod.precio,
+                        precio_combo: prod.precio_combo || 0,
+                        imgs: prod.imgs,
+                        colores: [nuevoColor.trim()],
+                        tallas: prod.tallas,
+                        unidades: prod.unidades
+                    };
+
+                    await fetch(`${API_URL}/${prod.id}`, {
+                        method: 'PUT',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(productoActualizado)
+                    });
+                }
+
+                alert("¡Listo! El color se ha actualizado en todo el catálogo con éxito.");
+                cargarProductos(); 
+            } catch (error) {
+                console.error("Error al actualizar masivamente:", error);
+                alert("Ocurrió un error al actualizar los colores.");
+            } finally {
+                btn.innerHTML = textoOriginal;
+                btn.disabled = false;
+            }
+        }
+        // --- FIN DE LA NUEVA FUNCIÓN ---
+
     </script>
 </body>
 </html>
