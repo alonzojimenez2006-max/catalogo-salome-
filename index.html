@@ -297,7 +297,7 @@ function enviarWhatsApp() {
     const asesorLink = urlParams.get('asesor');
     
     // Si la URL no tiene la palabra "asesor", envía al principal por defecto
-    const numeroPorDefecto = "584126530612"; 
+    const numeroPorDefecto = "584126530512"; 
     const telefonoDestino = asesorLink ? asesorLink : numeroPorDefecto;
 
     const codigoOrden = "CS-" + Math.random().toString(36).substr(2, 6).toUpperCase();
