@@ -29,6 +29,10 @@ class ProductoAdmin(BaseModel):
 class EstadoCatalogo(BaseModel):
     estado: str
 
+class Asesor(BaseModel):
+    nombre: str
+    telefono: str
+
 DATABASE_URL = os.getenv("DATABASE_URL", "postgresql://neondb_owner:npg_tqQWyp0OHgd4@ep-royal-dust-ax6ybowm.c-4.us-east-2.aws.neon.tech/neondb?sslmode=require")
 
 def get_db_connection():
@@ -63,6 +67,16 @@ def init_db():
         if cursor.fetchone()[0] == 0:
             cursor.execute("INSERT INTO configuracion (id, estado) VALUES (1, 'activo')")
         # -------------------------------------
+            
+        # --- NUEVO: TABLA DE ASESORES ---
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS asesores (
+                id SERIAL PRIMARY KEY,
+                nombre TEXT,
+                telefono TEXT
+            )
+        ''')
+        # --------------------------------
 
         conn.commit()
         # Parche para actualizar tabla existente sin borrar datos
@@ -167,6 +181,36 @@ def actualizar_estado(nuevo_estado: EstadoCatalogo):
     cursor.close()
     conn.close()
     return {"mensaje": "Estado actualizado"}
+
+@app.get("/api/asesores")
+def obtener_asesores():
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT id, nombre, telefono FROM asesores ORDER BY id ASC")
+    filas = cursor.fetchall()
+    cursor.close()
+    conn.close()
+    return [{"id": f[0], "nombre": f[1], "telefono": f[2]} for f in filas]
+
+@app.post("/api/asesores")
+def crear_asesor(asesor: Asesor):
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute("INSERT INTO asesores (nombre, telefono) VALUES (%s, %s)", (asesor.nombre, asesor.telefono))
+    conn.commit()
+    cursor.close()
+    conn.close()
+    return {"mensaje": "Asesor guardado"}
+
+@app.delete("/api/asesores/{asesor_id}")
+def eliminar_asesor(asesor_id: int):
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute("DELETE FROM asesores WHERE id=%s", (asesor_id,))
+    conn.commit()
+    cursor.close()
+    conn.close()
+    return {"mensaje": "Asesor eliminado"}
 
 @app.get("/")
 def pagina_principal():
